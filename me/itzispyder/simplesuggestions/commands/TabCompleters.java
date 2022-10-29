@@ -17,18 +17,14 @@ public class TabCompleters implements TabCompleter {
             case "suggest":
                 switch (args.length) {
                     case 1:
-                        argus.add("§8§l§o(Type your suggestion!)");
+                        argus.add("§8<your suggestion>");
                         break;
                 }
-                break;
-            case "suggestions":
                 break;
             case "feedback":
                 switch (args.length) {
                     case 1:
-                        return SuggestionFiles.getEntries();
-                    case 2:
-                        argus.add("§8§l§o(Type your feedback to the suggester!)");
+                        argus.add("§8<your feedback>");
                         break;
                 }
                 break;

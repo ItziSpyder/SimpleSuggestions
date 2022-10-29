@@ -6,6 +6,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class SuggestionFiles {
@@ -43,17 +45,24 @@ public class SuggestionFiles {
     }
 
     public static List<String> getEntries() {
-        return SuggestionFiles.get().getStringList("server.suggestions.entries");
+        try {
+            return new ArrayList<>(suggestions.getConfigurationSection("server.suggestions").getKeys(false));
+        } catch (NullPointerException exception) {
+            return new ArrayList<>();
+        }
     }
 
-    public static boolean containsEntry(String string) {
-        List<String> entries = getEntries();
-        for (String entry : entries) {
-            if (entry.equalsIgnoreCase(string)) {
-                return true;
-            }
+    public static int getOccupiedPages() {
+        double num = getEntries().size() / 21;
+        if (getEntries().size() % 21 == 0) {
+            return (int) Math.floor(num);
+        } else {
+            return (int) Math.floor(num) + 1;
         }
+    }
 
-        return false;
+    public static boolean willDuplicate(String input) {
+        List<String> entries = new ArrayList<>(getEntries());
+        return entries.removeIf(key -> !suggestions.getString("server.suggestions.key").contains(input));
     }
 }

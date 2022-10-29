@@ -8,8 +8,11 @@ public class ItemManager {
     public static ItemStack exit;
     public static ItemStack back;
     public static ItemStack blank;
+    public static ItemStack black;
     public static ItemStack red;
-    public static ItemStack replies;
+    public static ItemStack previous;
+    public static ItemStack next;
+    public static ItemStack compass;
 
     public static void setExit() {
         ItemStack item = new ItemStack(Material.BARRIER);
@@ -41,6 +44,16 @@ public class ItemManager {
         blank = item;
     }
 
+    public static void setBlack() {
+        ItemStack item = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+        ItemMeta meta = item.getItemMeta();
+
+        meta.setDisplayName(" ");
+
+        item.setItemMeta(meta);
+        black = item;
+    }
+
     public static void setRed() {
         ItemStack item = new ItemStack(Material.RED_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();
@@ -51,13 +64,33 @@ public class ItemManager {
         red = item;
     }
 
-    public static void setReplies() {
-        ItemStack item = new ItemStack(Material.OAK_SIGN);
+    public static void setPrevious() {
+        ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§a§lCheck replies");
+        meta.setDisplayName("Previous Page");
 
         item.setItemMeta(meta);
-        replies = item;
+        previous = item;
+    }
+
+    public static void setNext() {
+        ItemStack item = new ItemStack(Material.ARROW);
+        ItemMeta meta = item.getItemMeta();
+
+        meta.setDisplayName("Next Page");
+
+        item.setItemMeta(meta);
+        next = item;
+    }
+
+    public static void setCompass() {
+        ItemStack item = new ItemStack(Material.COMPASS);
+        ItemMeta meta = item.getItemMeta();
+
+        meta.setDisplayName("§bTo Current Page");
+
+        item.setItemMeta(meta);
+        compass = item;
     }
 }

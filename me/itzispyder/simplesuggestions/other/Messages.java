@@ -45,7 +45,7 @@ public class Messages {
                 } else if (wordCount < wordsPerLine) {
                     if (totalLines > 1) {
                         message += word + " ";
-                        lore.add("§2§o" + message);
+                        lore.add("§7§o" + message);
                         wordCount = 0;
                         message = "";
                         totalLines --;
@@ -54,7 +54,7 @@ public class Messages {
                         for (int i = 0; i < wordsLeft; i ++) {
                             message += words.get(words.size() - (wordsLeft - i)) + " ";
                         }
-                        lore.add("§2§o" + message);
+                        lore.add("§7§o" + message);
                         break;
                     }
                 }

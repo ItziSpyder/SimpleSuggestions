@@ -10,16 +10,20 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class SuggestionsEvents implements Listener {
@@ -28,10 +32,14 @@ public class SuggestionsEvents implements Listener {
         this.plugin = plugin;
     }
     static ItemStack x = ItemManager.blank;
+    static ItemStack b = ItemManager.black;
     static ItemStack y = ItemManager.red;
     static ItemStack close = ItemManager.exit;
     static ItemStack back = ItemManager.back;
-    static ItemStack replies = ItemManager.replies;
+    static ItemStack previous = ItemManager.previous;
+    static ItemStack next = ItemManager.next;
+    static ItemStack a = new ItemStack(Material.AIR);
+    static ItemStack compass = ItemManager.compass;
 
     @EventHandler
     public static void InventoryClickEvent(InventoryClickEvent e) {
@@ -51,13 +59,13 @@ public class SuggestionsEvents implements Listener {
                 if (!display.equalsIgnoreCase(" ")) {
                     if (display.equalsIgnoreCase("§c§lClose Menu")) {
                         p.closeInventory();
-                    } else if (display.equalsIgnoreCase("§7§lBack")) {
-                        openSuggestionsMenu(p);
+                    } else if (display.equalsIgnoreCase("§7§lBack") || display.equalsIgnoreCase("§bTo Current Page")) {
+                        openSuggestionsMenu(p,SuggestionFiles.getOccupiedPages() - 1);
                     }
                     p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK,10,10);
                 }
 
-                if (title.contains("§bSuggestions")) {
+                if (title.contains(Messages.starter + "eP.")) {
                     if (item.getType().equals(Material.PLAYER_HEAD)) {
                         if (p.isOp()) {
                             openSuggestionConfiguration(p,item);
@@ -67,14 +75,24 @@ public class SuggestionsEvents implements Listener {
                             p.playSound(p.getLocation(), Sound.ENTITY_SHULKER_TELEPORT,10,10F);
                             p.sendMessage(Messages.starter + "cSorry but I'm afraid you do not have permission to do this!");
                         }
-                    } else if (display.equalsIgnoreCase("§a§lCheck replies")) {
-                        openRepliesMenu(p);
+                    } else {
+                        int index = Integer.parseInt(title.substring(32)) - 1;
+                        switch (display) {
+                            case "Previous Page":
+                                if (index > 0) {
+                                    openSuggestionsMenu(p,index - 1);
+                                }
+                                break;
+                            case "Next Page":
+                                openSuggestionsMenu(p,index + 1);
+                                break;
+                        }
                     }
                 } else if (title.contains("§cActions")) {
                     if (display.equalsIgnoreCase("§a§lReply")) {
                         p.closeInventory();
                         Sounds.repeating(p,p.getLocation(),Sound.BLOCK_NOTE_BLOCK_BELL,10,1,2,5);
-                        p.sendMessage(Messages.starter + "2Type §a/feedback §2followed along with the recipient and your feedback to them!");
+                        p.sendMessage(Messages.starter + "2Type §a/feedback §2followed along with your feedback!");
                     } else if (display.equalsIgnoreCase("§c§lDelete")) {
                         ItemStack head = menu.getItem(0);
                         String recipient = head.getItemMeta().getDisplayName().substring(2);
@@ -82,11 +100,8 @@ public class SuggestionsEvents implements Listener {
                         p.sendMessage(Messages.starter + "2Deleted one suggestion from §a" + recipient + "!");
 
                         SuggestionFiles.get().set("server.suggestions." + recipient,null);
-                        List<String> entries = SuggestionFiles.getEntries();
-                        entries.remove(recipient);
-                        SuggestionFiles.get().set("server.suggestions.entries",entries);
                         SuggestionFiles.save();
-                        openSuggestionsMenu(p);
+                        openSuggestionsMenu(p,SuggestionFiles.getOccupiedPages() - 1);
                     } else if (display.equalsIgnoreCase("§3§lPrint")) {
                         Sounds.repeating(p,p.getLocation(),Sound.BLOCK_NOTE_BLOCK_BELL,10,10F,3,5);
                         ItemStack head = menu.getItem(0);
@@ -94,8 +109,8 @@ public class SuggestionsEvents implements Listener {
 
                         p.closeInventory();
                         TextComponent message = new TextComponent(Messages.starter + "a" + recipient + " suggests:\n"
-                                + "§2" + SuggestionFiles.get().getString("server.suggestions." + recipient + ".suggestion") + "   §8(Click to copy)");
-                        message.setClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,String.valueOf(SuggestionFiles.get().getString("server.suggestions." + recipient + ".suggestion"))));
+                                + "§2" + SuggestionFiles.get().getString("server.suggestions." + recipient) + "   §8(Click to copy)");
+                        message.setClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,String.valueOf(SuggestionFiles.get().getString("server.suggestions." + recipient))));
                         p.spigot().sendMessage(message);
                         p.sendMessage();
                     }
@@ -110,39 +125,62 @@ public class SuggestionsEvents implements Listener {
 
 
 
-    public static void openSuggestionsMenu(Player player) {
-        Inventory menu = Bukkit.createInventory(player,54, Messages.starter + "bSuggestions");
-
+    public static void openSuggestionsMenu(Player player,Integer index) {
+        Inventory menu = Bukkit.createInventory(player,54, Messages.starter + "eP." + (index + 1));
         List<String> entries = SuggestionFiles.getEntries();
+        ItemStack book = new ItemStack(Material.WRITABLE_BOOK);
+        ItemMeta bookM = book.getItemMeta();
+        bookM.setDisplayName("§aTotal §e" + SuggestionFiles.getEntries().size() + " §acomments!");
+        List<String> bookL = new ArrayList<>(Arrays.asList(
+                "§e" + SuggestionFiles.getOccupiedPages() + " §aoccupied pages",
+                "§7/suggest <your suggestion>"
+        ));
+        bookM.setLore(bookL);
+        book.setItemMeta(bookM);
 
-        for (int i = 0; i < 9; i ++) {
-            menu.setItem(menu.firstEmpty(), y);
-        }
+        ItemStack[] prefill = {
+                b,b,b,b,b,b,b,b,b,
+                b,a,a,a,a,a,a,a,b,
+                b,a,a,a,a,a,a,a,b,
+                b,a,a,a,a,a,a,a,b,
+                b,b,b,b,b,b,b,b,b,
+                previous,y,close,y,book,y,compass,y,next,
+        };
+        menu.setContents(prefill);
 
         if (entries.size() != 0) {
-            for (String entry : entries) {
-                ItemStack item = new ItemStack(Material.PLAYER_HEAD);
-                ItemMeta meta = item.getItemMeta();
-                ((SkullMeta) meta).setOwner(entry);
-                meta.setDisplayName("§a" + entry);
-                String suggestion = SuggestionFiles.get().getString("server.suggestions." + entry + ".suggestion");
-                meta.setLore(Messages.autoLoreSplit(suggestion,5));
+            for (int i = index * 21; i < (index * 21 + 21); i ++) {
+                try {
+                    String entry = SuggestionFiles.getEntries().get(i);
+                    ItemStack item = null;
 
-                item.setItemMeta(meta);
-                menu.addItem(item);
+                    if (entry.contains("MODERATOR_REPLY-")) {
+                        item = new ItemStack(Material.PAPER);
+                        ItemMeta meta = item.getItemMeta();
+                        meta.setDisplayName("§c§lAdmin Reply");
+                        String reply = SuggestionFiles.get().getString("server.suggestions." + entry);
+                        meta.setLore(Messages.autoLoreSplit(reply,5));
+                        meta.addEnchant(Enchantment.LUCK,1,false);
+                        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                        item.setItemMeta(meta);
+                    } else {
+                        item = new ItemStack(Material.PLAYER_HEAD);
+                        ItemMeta meta = item.getItemMeta();
+                        ((SkullMeta) meta).setOwner(entry);
+                        meta.setDisplayName("§a" + entry);
+                        String suggestion = SuggestionFiles.get().getString("server.suggestions." + entry);
+                        meta.setLore(Messages.autoLoreSplit(suggestion,5));
+                        item.setItemMeta(meta);
+                    }
+
+                    menu.setItem(menu.firstEmpty(),item);
+                } catch (IndexOutOfBoundsException exception) {
+                    // empty
+                }
             }
-        } else {
-            player.sendMessage(Messages.starter + "cSuggestions is empty!");
-        }
-        for (int i = 0; i < 9; i ++) {
-            menu.setItem(menu.getSize() - (i + 1), y);
         }
 
-
-        menu.setItem(menu.getSize() - 1, close);
-        menu.setItem(menu.getSize() - 9, replies);
         fillEmpty(menu);
-
         player.openInventory(menu);
     }
 
@@ -170,33 +208,6 @@ public class SuggestionsEvents implements Listener {
 
         menu.setContents(contents);
         player.openInventory(menu);
-    }
-
-    public static void openRepliesMenu(Player player) {
-        Inventory menu = Bukkit.createInventory(player,9,Messages.starter + "aReplies");
-
-        String feedback = SuggestionFiles.get().getString("server.suggestions." + player.getName() + ".reply");
-        String replier = SuggestionFiles.get().getString("server.suggestions." + player.getName() + ".replier");
-
-        if (feedback != null && replier != null) {
-            ItemStack reply = new ItemStack(Material.PLAYER_HEAD);
-            ItemMeta Mreply = reply.getItemMeta();
-            ((SkullMeta) Mreply).setOwner(player.getName());
-            Mreply.setDisplayName("§a" + replier + " replied to your suggestion:");
-            Mreply.setLore(Messages.autoLoreSplit(feedback,5));
-            reply.setItemMeta(Mreply);
-
-            ItemStack[] contents = {
-                    x,x,x,x,reply,x,x,back,close
-            };
-
-            menu.setContents(contents);
-            player.openInventory(menu);
-        } else {
-            player.closeInventory();
-            player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT,10,10F);
-            player.sendMessage(Messages.starter + "2Your suggestion has not been read nor replied by a staff member! Please continue to be patient, thank you!");
-        }
     }
 
     public static void fillEmpty(Inventory inventory) {

@@ -34,8 +34,11 @@ public final class SimpleSuggestions extends JavaPlugin {
         ItemManager.setExit();
         ItemManager.setBack();
         ItemManager.setBlank();
+        ItemManager.setBlack();
         ItemManager.setRed();
-        ItemManager.setReplies();
+        ItemManager.setPrevious();
+        ItemManager.setNext();
+        ItemManager.setCompass();
 
         // Server commands
         getCommand("suggest").setExecutor(new SuggestionCommands(this));
@@ -44,7 +47,6 @@ public final class SimpleSuggestions extends JavaPlugin {
         getCommand("suggestions").setTabCompleter(new TabCompleters());
         getCommand("feedback").setExecutor(new SuggestionCommands(this));
         getCommand("feedback").setTabCompleter(new TabCompleters());
-        getCommand("/").setExecutor(new SuggestionCommands(this));
         getCommand("simplesuggestions").setExecutor(new SuggestionCommands(this));
 
         // Server events
