@@ -93,11 +93,7 @@ public class SuggestionsEvents implements Listener {
                         }
                     }
                 } else if (title.contains("§cActions")) {
-                    if (display.equalsIgnoreCase("§a§lReply")) {
-                        p.closeInventory();
-                        Sounds.repeating(p,p.getLocation(),Sound.BLOCK_NOTE_BLOCK_BELL,10,1,2,5);
-                        p.sendMessage(Messages.starter + "2Type §a/feedback §2followed along with your feedback!");
-                    } else if (display.equalsIgnoreCase("§c§lDelete")) {
+                    if (display.equalsIgnoreCase("§c§lDelete")) {
                         ItemStack head = menu.getItem(0);
                         List<String> headL = head.getItemMeta().getLore();
                         String recipient = head.getItemMeta().getDisplayName().substring(2);
@@ -229,18 +225,13 @@ public class SuggestionsEvents implements Listener {
         Mdelete.setDisplayName("§c§lDelete");
         delete.setItemMeta(Mdelete);
 
-        ItemStack reply = new ItemStack(Material.LIME_TERRACOTTA);
-        ItemMeta Mreply = reply.getItemMeta();
-        Mreply.setDisplayName("§a§lReply");
-        reply.setItemMeta(Mreply);
-
         ItemStack print = new ItemStack(Material.BLUE_TERRACOTTA);
         ItemMeta Mprint = print.getItemMeta();
         Mprint.setDisplayName("§3§lPrint");
         print.setItemMeta(Mprint);
 
         ItemStack[] contents = {
-                recipient,reply,print,x,delete,x,x,back,close
+                recipient,x,print,x,delete,x,x,back,close
         };
 
         menu.setContents(contents);
