@@ -50,7 +50,17 @@ public class SuggestionCommands implements CommandExecutor {
                         feedback += arg + " ";
                     }
 
-                    SuggestionFiles.get().set("server.suggestions.MODERATOR_REPLY-" + SuggestionFiles.getEntries().size(),feedback);
+                    int id = SuggestionFiles.getEntries().size();
+                    SuggestionFiles.get().set("server.suggestions.MODERATOR_REPLY-" + id + ".text",feedback);
+                    SuggestionFiles.get().set("server.suggestions.MODERATOR_REPLY-" + id + ".id", id);
+                    SuggestionFiles.get().set("server.suggestions.MODERATOR_REPLY-" + id + ".replier", p.getName());
+                    if (id > 0 &&
+                            !SuggestionFiles.getEntries().get(id - 1).contains("MODERATOR_REPLY-")
+                    ) {
+                        String lastSubmission = SuggestionFiles.get().getString("server.suggestions." + SuggestionFiles.getEntries().get(id - 1));
+                        SuggestionFiles.get().set("server.suggestions.MODERATOR_REPLY-" + id + ".replying_to", lastSubmission);
+                        SuggestionFiles.get().set("server.suggestions.MODERATOR_REPLY-" + id + ".replied", SuggestionFiles.getEntries().get(id - 1));
+                    }
                     SuggestionFiles.save();
 
                     p.sendMessage(Messages.starter + "2Reply added!");

@@ -22,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
+import java.awt.print.Paper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,12 +62,13 @@ public class SuggestionsEvents implements Listener {
                         p.closeInventory();
                     } else if (display.equalsIgnoreCase("§7§lBack") || display.equalsIgnoreCase("§bTo Current Page")) {
                         openSuggestionsMenu(p,SuggestionFiles.getOccupiedPages() - 1);
+                        p.playSound(p.getLocation(),Sound.BLOCK_ENCHANTMENT_TABLE_USE,10,10F);
                     }
                     p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK,10,10);
                 }
 
                 if (title.contains(Messages.starter + "eP.")) {
-                    if (item.getType().equals(Material.PLAYER_HEAD)) {
+                    if (item.getType().equals(Material.PLAYER_HEAD) || item.getType().equals(Material.PAPER)) {
                         if (p.isOp()) {
                             openSuggestionConfiguration(p,item);
                             p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING,10,0.5F);
@@ -76,15 +78,17 @@ public class SuggestionsEvents implements Listener {
                             p.sendMessage(Messages.starter + "cSorry but I'm afraid you do not have permission to do this!");
                         }
                     } else {
-                        int index = Integer.parseInt(title.substring(32)) - 1;
+                        int index = Integer.parseInt(title.substring((Messages.starter + "eP.").length())) - 1;
                         switch (display) {
                             case "Previous Page":
                                 if (index > 0) {
                                     openSuggestionsMenu(p,index - 1);
+                                    p.playSound(p.getLocation(),Sound.ITEM_BOOK_PAGE_TURN,10,1.5F);
                                 }
                                 break;
                             case "Next Page":
                                 openSuggestionsMenu(p,index + 1);
+                                p.playSound(p.getLocation(),Sound.ITEM_BOOK_PAGE_TURN,10,1.5F);
                                 break;
                         }
                     }
@@ -95,22 +99,41 @@ public class SuggestionsEvents implements Listener {
                         p.sendMessage(Messages.starter + "2Type §a/feedback §2followed along with your feedback!");
                     } else if (display.equalsIgnoreCase("§c§lDelete")) {
                         ItemStack head = menu.getItem(0);
+                        List<String> headL = head.getItemMeta().getLore();
                         String recipient = head.getItemMeta().getDisplayName().substring(2);
+
+                        if (head.getType().equals(Material.PAPER)) {
+                            int id = Integer.parseInt(headL.get(headL.size() - 1).substring(6));
+                            assert headL != null;
+                            SuggestionFiles.get().set("server.suggestions.MODERATOR_REPLY-" + id,null);
+                        } else {
+                            SuggestionFiles.get().set("server.suggestions." + recipient,null);
+                        }
+
+                        SuggestionFiles.save();
                         Sounds.repeating(p,p.getLocation(),Sound.BLOCK_NOTE_BLOCK_BELL,10,0.2F,2,5);
                         p.sendMessage(Messages.starter + "2Deleted one suggestion from §a" + recipient + "!");
-
-                        SuggestionFiles.get().set("server.suggestions." + recipient,null);
-                        SuggestionFiles.save();
                         openSuggestionsMenu(p,SuggestionFiles.getOccupiedPages() - 1);
                     } else if (display.equalsIgnoreCase("§3§lPrint")) {
                         Sounds.repeating(p,p.getLocation(),Sound.BLOCK_NOTE_BLOCK_BELL,10,10F,3,5);
                         ItemStack head = menu.getItem(0);
+                        List<String> headL = head.getItemMeta().getLore();
                         String recipient = head.getItemMeta().getDisplayName().substring(2);
-
-                        p.closeInventory();
                         TextComponent message = new TextComponent(Messages.starter + "a" + recipient + " suggests:\n"
                                 + "§2" + SuggestionFiles.get().getString("server.suggestions." + recipient) + "   §8(Click to copy)");
-                        message.setClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,String.valueOf(SuggestionFiles.get().getString("server.suggestions." + recipient))));
+
+                        if (head.getType().equals(Material.PAPER)) {
+                            int id = Integer.parseInt(headL.get(headL.size() - 1).substring(6));
+                            assert headL != null;
+                            String path = "server.suggestions.MODERATOR_REPLY-" + id;
+                            message = new TextComponent(Messages.starter + "a" + SuggestionFiles.get().getString(path + ".replier") + " says:\n"
+                                    + "§2" + SuggestionFiles.get().getString(path + ".text") + "   §8(Click to copy)");
+                            message.setClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,String.valueOf(SuggestionFiles.get().getString(path + ".text"))));
+                        } else {
+                            message.setClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,String.valueOf(SuggestionFiles.get().getString("server.suggestions." + recipient))));
+                        }
+
+                        p.closeInventory();
                         p.spigot().sendMessage(message);
                         p.sendMessage();
                     }
@@ -157,9 +180,22 @@ public class SuggestionsEvents implements Listener {
                     if (entry.contains("MODERATOR_REPLY-")) {
                         item = new ItemStack(Material.PAPER);
                         ItemMeta meta = item.getItemMeta();
-                        meta.setDisplayName("§c§lAdmin Reply");
-                        String reply = SuggestionFiles.get().getString("server.suggestions." + entry);
-                        meta.setLore(Messages.autoLoreSplit(reply,5));
+                        meta.setDisplayName("§c§l§nAdmin Reply");
+                        String text = SuggestionFiles.get().getString("server.suggestions." + entry + ".text");
+                        String replier = SuggestionFiles.get().getString("server.suggestions." + entry + ".replier");
+                        int id = SuggestionFiles.get().getInt("server.suggestions." + entry + ".id");
+                        String replying_to = SuggestionFiles.get().getString("server.suggestions." + entry + ".replying_to");
+                        String replied = SuggestionFiles.get().getString("server.suggestions." + entry + ".replied");
+                        List<String> lore = new ArrayList<>();
+                        if (replied != null && replying_to != null) {
+                            lore.addAll(Messages.autoLoreSplit("\"Replying to " + replied + ": " + replying_to + "\"",5,"§8§o"));
+                            lore.add(" ");
+                        }
+                        lore.add("§7§n" + replier + ": ");
+                        assert text != null;
+                        lore.addAll(Messages.autoLoreSplit("\"" + text + "\"",5,"§7§o"));
+                        lore.add("§0ID: " + id);
+                        meta.setLore(lore);
                         meta.addEnchant(Enchantment.LUCK,1,false);
                         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                         item.setItemMeta(meta);
@@ -169,7 +205,8 @@ public class SuggestionsEvents implements Listener {
                         ((SkullMeta) meta).setOwner(entry);
                         meta.setDisplayName("§a" + entry);
                         String suggestion = SuggestionFiles.get().getString("server.suggestions." + entry);
-                        meta.setLore(Messages.autoLoreSplit(suggestion,5));
+                        assert suggestion != null;
+                        meta.setLore(Messages.autoLoreSplit(suggestion,5,"§7§o"));
                         item.setItemMeta(meta);
                     }
 
